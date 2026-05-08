@@ -1,0 +1,138 @@
+//////////////////////////////////////////////////////////
+// 🔐 AUTH ROUTES
+//////////////////////////////////////////////////////////
+
+const express = require("express");
+const router = express.Router();
+
+const { loginLimiter } = require("../middleware/rateLimiter");
+
+const {
+  registerSchema,
+  loginSchema,
+} = require("../validators/authValidator");
+
+const {
+  registerUser,
+  loginUser,
+} = require("../services/authService");
+
+const authenticate = require("../middleware/authMiddleware");
+const authorizeRoles = require("../middleware/roleMiddleware");
+
+//////////////////////////////////////////////////////////
+// 🛡️ SHARED ERROR HANDLER
+//////////////////////////////////////////////////////////
+
+function handleAuthError(res, error, context) {
+  console.error(`❌ ${context} error:`, error);
+
+  //////////////////////////////////////////////////////////
+  // ZOD VALIDATION ERRORS
+  //////////////////////////////////////////////////////////
+
+  if (error.name === "ZodError") {
+    return res.status(400).json({
+      error: "Validation failed",
+      fields: error.errors.map((e) => ({
+        field: e.path[0],
+        message: e.message,
+      })),
+    });
+  }
+
+  //////////////////////////////////////////////////////////
+  // KNOWN BUSINESS LOGIC ERRORS
+  //////////////////////////////////////////////////////////
+
+  const knownErrors = {
+    "Email already exists": 409,
+    "Invalid credentials": 401,
+    "Account not found": 404,
+  };
+
+  if (knownErrors[error.message]) {
+    return res.status(knownErrors[error.message]).json({
+      error: error.message,
+    });
+  }
+
+  //////////////////////////////////////////////////////////
+  // UNKNOWN SERVER ERROR
+  //////////////////////////////////////////////////////////
+
+  return res.status(500).json({
+    error: `${context} failed. Please try again.`,
+  });
+}
+
+//////////////////////////////////////////////////////////
+// 🧑‍💼 REGISTER USER
+//////////////////////////////////////////////////////////
+
+router.post(
+  "/register",
+  authenticate,
+  authorizeRoles("SUPER_ADMIN", "ADMIN"),
+  async (req, res) => {
+  try {
+    //////////////////////////////////////////////////////////
+    // VALIDATE INPUT
+    //////////////////////////////////////////////////////////
+
+    const validatedData = registerSchema.parse(req.body);
+
+    //////////////////////////////////////////////////////////
+    // REGISTER USER
+    //////////////////////////////////////////////////////////
+
+    const user = await registerUser(validatedData);
+
+    //////////////////////////////////////////////////////////
+    // RESPONSE
+    //////////////////////////////////////////////////////////
+
+    res.status(201).json({
+      message: "User created successfully",
+      user,
+    });
+
+  } catch (error) {
+    handleAuthError(res, error, "Register");
+  }
+});
+
+//////////////////////////////////////////////////////////
+// 🔐 LOGIN USER
+//////////////////////////////////////////////////////////
+
+router.post("/login", loginLimiter, async (req, res) => {
+  try {
+    //////////////////////////////////////////////////////////
+    // VALIDATE INPUT
+    //////////////////////////////////////////////////////////
+
+    const validatedData = loginSchema.parse(req.body);
+
+    //////////////////////////////////////////////////////////
+    // LOGIN USER
+    //////////////////////////////////////////////////////////
+
+    const result = await loginUser(validatedData);
+
+    //////////////////////////////////////////////////////////
+    // RESPONSE
+    //////////////////////////////////////////////////////////
+
+    res.json({
+      message: "Login successful",
+      token: result.token,
+      user: result.user,
+    });
+
+  } catch (error) {
+    handleAuthError(res, error, "Login");
+  }
+});
+
+module.exports = router;

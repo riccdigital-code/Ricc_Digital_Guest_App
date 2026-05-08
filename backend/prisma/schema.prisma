@@ -1,0 +1,280 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+//////////////////////////////////////////////////////////
+// 🏢 PROPERTY CORE (MULTI-TENANT FOUNDATION)
+//////////////////////////////////////////////////////////
+
+model Property {
+  id      Int    @id @default(autoincrement())
+  name    String
+  ownerId Int
+
+  createdAt DateTime @default(now())
+
+  //////////////////////////////////////////////////////////
+  // 🔗 RELATIONS (VERY IMPORTANT)
+  //////////////////////////////////////////////////////////
+
+  users           User[]
+  bookings        Booking[]
+  sessions        GuestSession[]
+  orders          Order[]
+  serviceRequest  ServiceRequest[]
+  tasks           Task[]
+  supportRequests SupportRequest[]
+  callLogs        CallLog[]
+
+  //////////////////////////////////////////////////////////
+  // 🆕 SERVICE SYSTEM (FIX FOR YOUR ERROR)
+  //////////////////////////////////////////////////////////
+
+  serviceCategories ServiceCategory[]
+  serviceItems      ServiceItem[]
+}
+
+//////////////////////////////////////////////////////////
+// 🗂️ SERVICE CATEGORY SYSTEM (ADMIN CONTROL)
+//////////////////////////////////////////////////////////
+
+model ServiceCategory {
+  id Int @id @default(autoincrement())
+
+  propertyId Int
+  property   Property @relation(fields: [propertyId], references: [id])
+
+  name     String // e.g. Food, Drinks, Cleaning
+  isActive Boolean @default(true)
+
+  type String // "request" | "order"
+
+  createdAt DateTime @default(now())
+
+  items ServiceItem[]
+}
+
+//////////////////////////////////////////////////////////
+// 🍽️ SERVICE ITEMS (ORDERABLE + REQUESTABLE)
+//////////////////////////////////////////////////////////
+
+model ServiceItem {
+  id Int @id @default(autoincrement())
+
+  propertyId Int
+  property   Property @relation(fields: [propertyId], references: [id])
+
+  categoryId Int
+  category   ServiceCategory @relation(fields: [categoryId], references: [id])
+
+  name        String
+  price       Float
+  isAvailable Boolean @default(true)
+
+  createdAt DateTime    @default(now())
+  OrderItem OrderItem[]
+}
+
+//////////////////////////////////////////////////////////
+// 📅 BOOKING SYSTEM (ENTRY LOGIC)
+//////////////////////////////////////////////////////////
+
+model Booking {
+  id Int @id @default(autoincrement())
+
+  propertyId Int
+  property   Property @relation(fields: [propertyId], references: [id])
+
+  firstName  String
+  surname    String
+  phone      String
+  roomNumber String
+
+  checkInDate  DateTime  @default(now())
+  checkOutDate DateTime?
+
+  status        String @default("pending")
+  paymentStatus String @default("pending")
+
+  createdAt DateTime @default(now())
+}
+
+//////////////////////////////////////////////////////////
+// 🔐 GUEST SESSION (REAL-TIME STATE)
+//////////////////////////////////////////////////////////
+
+model GuestSession {
+  id Int @id @default(autoincrement())
+
+  propertyId Int
+  property   Property @relation(fields: [propertyId], references: [id])
+
+  firstName  String
+  surname    String
+  phone      String
+  roomNumber String
+
+  status    String   @default("active")
+  expiresAt DateTime
+
+  createdAt DateTime @default(now())
+}
+
+//////////////////////////////////////////////////////////
+// 🔥 ORDER SYSTEM
+//////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////
+// 🍔 ORDER SYSTEM
+//////////////////////////////////////////////////////////
+
+model Order {
+  id Int @id @default(autoincrement())
+
+  propertyId Int
+  property   Property @relation(fields: [propertyId], references: [id])
+
+  roomNumber String
+  status     String @default("pending")
+
+  createdAt DateTime @default(now())
+
+  items OrderItem[]
+}
+
+//////////////////////////////////////////////////////////
+// 🍔 ORDER ITEM (CONNECTED TO MENU ITEMS)
+//////////////////////////////////////////////////////////
+
+model OrderItem {
+  id      Int @id @default(autoincrement())
+  orderId Int
+
+  // 🔥 CONNECT TO MENU ITEM (IMPORTANT)
+  serviceItemId Int
+  serviceItem   ServiceItem @relation(fields: [serviceItemId], references: [id])
+
+  quantity Int
+  status   String @default("pending")
+
+  order Order  @relation(fields: [orderId], references: [id])
+  tasks Task[]
+}
+
+//////////////////////////////////////////////////////////
+// 🧹 SERVICE REQUEST SYSTEM
+//////////////////////////////////////////////////////////
+
+model ServiceRequest {
+  id Int @id @default(autoincrement())
+
+  propertyId Int
+  property   Property @relation(fields: [propertyId], references: [id])
+
+  roomNumber  String
+  requestType String
+
+  status String @default("pending")
+
+  createdAt DateTime @default(now())
+
+  tasks Task[]
+}
+
+//////////////////////////////////////////////////////////
+// 🔥 TASK ENGINE (CORE SYSTEM)
+//////////////////////////////////////////////////////////
+
+model Task {
+  id Int @id @default(autoincrement())
+
+  propertyId Int
+  property   Property @relation(fields: [propertyId], references: [id])
+
+  itemName String
+  status   String @default("pending")
+  priority String @default("medium")
+
+  assignedToId Int?
+  assignedTo   User? @relation("UserTasks", fields: [assignedToId], references: [id])
+
+  orderItemId Int?
+  requestId   Int?
+
+  orderItem OrderItem?      @relation(fields: [orderItemId], references: [id])
+  request   ServiceRequest? @relation(fields: [requestId], references: [id])
+
+  // ✅ FIXED
+  supportRequests SupportRequest[]
+
+  // ✅ FIXED
+  callLogId Int?     @unique
+  callLog   CallLog? @relation(fields: [callLogId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model User {
+  id       Int    @id @default(autoincrement())
+  name     String
+  email    String @unique
+  password String
+
+  role String // SUPER_ADMIN, ADMIN, STAFF, GUEST
+
+  propertyId Int?
+  property   Property? @relation(fields: [propertyId], references: [id])
+
+  tasks Task[] @relation("UserTasks")
+
+  createdAt DateTime @default(now())
+}
+
+//////////////////////////////////////////////////////////
+// 🆘 SUPPORT REQUEST SYSTEM
+//////////////////////////////////////////////////////////
+
+model SupportRequest {
+  id Int @id @default(autoincrement())
+
+  propertyId Int
+  property   Property @relation(fields: [propertyId], references: [id])
+
+  roomNumber String
+  phone      String?
+
+  status String @default("open")
+
+  // OPTIONAL LINK TO TASK ENGINE
+  taskId Int?
+  task   Task? @relation(fields: [taskId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+//////////////////////////////////////////////////////////
+// 📞 CALL LOG (ROOM QR CALL FEATURE)
+//////////////////////////////////////////////////////////
+
+model CallLog {
+  id Int @id @default(autoincrement())
+
+  propertyId Int
+  property   Property @relation(fields: [propertyId], references: [id])
+
+  roomNumber String
+  phone      String?
+  urgency    String  @default("normal")
+
+  //////////////////////////////////////////////////////////
+  // 🔗 ONE-WAY RELATION ONLY (NO fields/references here)
+  //////////////////////////////////////////////////////////
+  task Task?
+
+  createdAt DateTime @default(now())
+}

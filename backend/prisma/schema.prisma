@@ -7,20 +7,12 @@ generator client {
   provider = "prisma-client-js"
 }
 
-//////////////////////////////////////////////////////////
-// 🏢 PROPERTY CORE
-//////////////////////////////////////////////////////////
-// ... rest of your models (keep everything from here down)
-
-//////////////////////////////////////////////////////////
-// 🏢 PROPERTY
-//////////////////////////////////////////////////////////
-
 model Property {
   id        Int      @id @default(autoincrement())
   name      String
   ownerId   Int
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   rooms             Room[]
   users             User[]
@@ -35,45 +27,42 @@ model Property {
   callLogs          CallLog[]
 }
 
-//////////////////////////////////////////////////////////
-// 🗂️ SERVICE CATEGORY
-//////////////////////////////////////////////////////////
-
 model ServiceCategory {
   id         Int      @id @default(autoincrement())
   propertyId Int
   name       String
   isActive   Boolean  @default(true)
-  type       String // "request" | "order"
+  type       String
   createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   property Property      @relation(fields: [propertyId], references: [id])
   items    ServiceItem[]
-}
 
-//////////////////////////////////////////////////////////
-// 🍽️ SERVICE ITEM
-//////////////////////////////////////////////////////////
+  @@unique([propertyId, name, type])
+  @@index([propertyId])
+}
 
 model ServiceItem {
   id         Int      @id @default(autoincrement())
   propertyId Int
   categoryId Int
   name       String
-  price      Float?
+  price      Decimal? @db.Decimal(10, 2)
   isPaid     Boolean  @default(false)
-  isActive   Boolean  @default(true) // ✅ FIXED: was isAvailable
+  isActive   Boolean  @default(true)
   createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  property   Property         @relation(fields: [propertyId], references: [id])
-  category   ServiceCategory  @relation(fields: [categoryId], references: [id])
+  property   Property        @relation(fields: [propertyId], references: [id])
+  category   ServiceCategory @relation(fields: [categoryId], references: [id])
   orderItems OrderItem[]
   requests   ServiceRequest[]
-}
 
-//////////////////////////////////////////////////////////
-// 🏠 ROOM — permanent QR anchor
-//////////////////////////////////////////////////////////
+  @@unique([propertyId, categoryId, name])
+  @@index([propertyId])
+  @@index([categoryId])
+}
 
 model Room {
   id         Int      @id @default(autoincrement())
@@ -84,19 +73,17 @@ model Room {
   roomType   String?
   isActive   Boolean  @default(true)
   createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   property Property       @relation(fields: [propertyId], references: [id])
   sessions GuestSession[]
   bookings Booking[]
-
   callLogs CallLog[]
 
+  @@unique([propertyId, roomNumber])
+  @@index([propertyId])
   @@map("rooms")
 }
-
-//////////////////////////////////////////////////////////
-// 📅 BOOKING
-//////////////////////////////////////////////////////////
 
 model Booking {
   id            Int       @id @default(autoincrement())
@@ -107,19 +94,19 @@ model Booking {
   roomNumber    String
   roomId        Int?
   checkInDate   DateTime  @default(now())
-  checkoutDate  DateTime? // ✅ FIXED: consistent lowercase
+  checkoutDate  DateTime?
   status        String    @default("pending")
   paymentStatus String    @default("pending")
   createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   property Property       @relation(fields: [propertyId], references: [id])
   room     Room?          @relation(fields: [roomId], references: [id])
   sessions GuestSession[]
-}
 
-//////////////////////////////////////////////////////////
-// 👤 GUEST SESSION
-//////////////////////////////////////////////////////////
+  @@index([propertyId])
+  @@index([roomId])
+}
 
 model GuestSession {
   id         Int      @id @default(autoincrement())
@@ -133,15 +120,16 @@ model GuestSession {
   bookingId  Int?
   expiresAt  DateTime
   createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   property Property @relation(fields: [propertyId], references: [id])
   room     Room     @relation(fields: [roomId], references: [id])
   booking  Booking? @relation(fields: [bookingId], references: [id])
-}
 
-//////////////////////////////////////////////////////////
-// 🍔 ORDER
-//////////////////////////////////////////////////////////
+  @@index([propertyId])
+  @@index([roomId])
+  @@index([status])
+}
 
 model Order {
   id         Int      @id @default(autoincrement())
@@ -149,30 +137,30 @@ model Order {
   roomNumber String
   status     String   @default("pending")
   createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   property Property    @relation(fields: [propertyId], references: [id])
   items    OrderItem[]
+
+  @@index([propertyId])
 }
 
-//////////////////////////////////////////////////////////
-// 🍔 ORDER ITEM
-//////////////////////////////////////////////////////////
-
 model OrderItem {
-  id            Int    @id @default(autoincrement())
+  id            Int      @id @default(autoincrement())
   orderId       Int
   serviceItemId Int
   quantity      Int
-  status        String @default("pending")
+  status        String   @default("pending")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   order       Order       @relation(fields: [orderId], references: [id])
   serviceItem ServiceItem @relation(fields: [serviceItemId], references: [id])
   tasks       Task[]
-}
 
-//////////////////////////////////////////////////////////
-// 🧹 SERVICE REQUEST
-//////////////////////////////////////////////////////////
+  @@index([orderId])
+  @@index([serviceItemId])
+}
 
 model ServiceRequest {
   id            Int      @id @default(autoincrement())
@@ -182,39 +170,42 @@ model ServiceRequest {
   note          String?
   status        String   @default("pending")
   createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   property    Property    @relation(fields: [propertyId], references: [id])
   serviceItem ServiceItem @relation(fields: [serviceItemId], references: [id])
   tasks       Task[]
-}
 
-//////////////////////////////////////////////////////////
-// 🔥 TASK ENGINE
-//////////////////////////////////////////////////////////
+  @@index([propertyId])
+  @@index([serviceItemId])
+}
 
 model Task {
   id           Int      @id @default(autoincrement())
   propertyId   Int
   itemName     String
   status       String   @default("pending")
-  priority     String   @default("normal") // ✅ FIXED: was "medium"
+  priority     String   @default("normal")
   assignedToId Int?
   orderItemId  Int?
   requestId    Int?
   callLogId    Int?     @unique
   createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  property        Property         @relation(fields: [propertyId], references: [id])
-  assignedTo      User?            @relation("UserTasks", fields: [assignedToId], references: [id])
-  orderItem       OrderItem?       @relation(fields: [orderItemId], references: [id])
-  request         ServiceRequest?  @relation(fields: [requestId], references: [id])
-  callLog         CallLog?         @relation(fields: [callLogId], references: [id])
+  property        Property        @relation(fields: [propertyId], references: [id])
+  assignedTo      User?           @relation("UserTasks", fields: [assignedToId], references: [id])
+  orderItem       OrderItem?      @relation(fields: [orderItemId], references: [id])
+  request         ServiceRequest? @relation(fields: [requestId], references: [id])
+  callLog         CallLog?        @relation(fields: [callLogId], references: [id])
   supportRequests SupportRequest[]
-}
 
-//////////////////////////////////////////////////////////
-// 👥 USER
-//////////////////////////////////////////////////////////
+  @@index([propertyId])
+  @@index([assignedToId])
+  @@index([status])
+  @@index([propertyId, status])
+  @@index([assignedToId, status])
+}
 
 model User {
   id         Int      @id @default(autoincrement())
@@ -224,14 +215,15 @@ model User {
   role       String
   propertyId Int?
   createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  property Property? @relation(fields: [propertyId], references: [id]) // ✅ FIXED: optional
+  property Property? @relation(fields: [propertyId], references: [id])
   tasks    Task[]    @relation("UserTasks")
-}
 
-//////////////////////////////////////////////////////////
-// 🆘 SUPPORT REQUEST
-//////////////////////////////////////////////////////////
+  @@index([propertyId])
+  @@index([role])
+  @@index([propertyId, role])
+}
 
 model SupportRequest {
   id         Int      @id @default(autoincrement())
@@ -241,14 +233,13 @@ model SupportRequest {
   status     String   @default("open")
   taskId     Int?
   createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   property Property @relation(fields: [propertyId], references: [id])
   task     Task?    @relation(fields: [taskId], references: [id])
-}
 
-//////////////////////////////////////////////////////////
-// 📞 CALL LOG
-//////////////////////////////////////////////////////////
+  @@index([propertyId])
+}
 
 model CallLog {
   id         Int      @id @default(autoincrement())
@@ -261,6 +252,7 @@ model CallLog {
   status     String   @default("pending")
   notes      String?
   createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   property Property @relation(fields: [propertyId], references: [id])
   room     Room?    @relation(fields: [roomId], references: [id])

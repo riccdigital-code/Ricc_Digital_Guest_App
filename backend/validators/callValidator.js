@@ -33,44 +33,20 @@ const {
 
 const createCallSchema = z.object({
 
-  //////////////////////////////////////////////////////////
-  // propertyId — multi-tenant boundary
-  // Route verifies this matches req.user.propertyId for GUEST
-  //////////////////////////////////////////////////////////
-
-  propertyId: propertyIdSchema
-    .describe("Property scope for call"),
-
-  //////////////////////////////////////////////////////////
-  // roomNumber — string display identifier
-  // Matches CallLog.roomNumber in schema
-  //////////////////////////////////////////////////////////
-
   roomNumber: roomNumberSchema
     .describe("Room number the call originates from"),
-
-  //////////////////////////////////////////////////////////
-  // callType — operational category
-  // Determines priority in routing engine
-  //////////////////////////////////////////////////////////
 
   callType: callTypeSchema
     .describe("Call type determines routing priority"),
 
-  //////////////////////////////////////////////////////////
-  // phone — optional contact number
-  // Matches CallLog.phone in schema
-  //////////////////////////////////////////////////////////
-
   phone: phoneNumberSchema
     .describe("Contact phone number"),
 
-  //////////////////////////////////////////////////////////
-  // notes — optional context
-  //////////////////////////////////////////////////////////
-
   notes: optionalStringField("Call notes", 1000)
     .describe("Additional context or instructions"),
+
+  // propertyId REMOVED — comes from JWT token only
+  // callService uses user.propertyId exclusively
 });
 
 //////////////////////////////////////////////////////////

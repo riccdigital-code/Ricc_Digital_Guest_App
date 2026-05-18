@@ -3,32 +3,42 @@
 //////////////////////////////////////////////////////////
 
 const prisma = require("../prismaClient");
-const bcrypt = require("bcryptjs");
+const bcrypt = require("bcrypt");
 
 const safeUser = require("../utils/safeUser");
 const { generateToken } = require("../utils/jwt");
+
+//////////////////////////////////////////////////////////
+// DUMMY HASH
+// Used in timing-safe login to prevent email enumeration
+// bcrypt.compare against this when user is not found
+// Ensures consistent response time whether user exists or not
+//////////////////////////////////////////////////////////
+
+const DUMMY_HASH =
+  "$2b$10$dummyhashfortimingprotectiononly.placeholder00000";
 
 //////////////////////////////////////////////////////////
 // REGISTER USER
 //////////////////////////////////////////////////////////
 
 async function registerUser(data) {
-  const {
-    name,
-    email,
-    password,
-    role,
-    propertyId,
-  } = data;
+  const { name, email, password, role, propertyId } = data;
+
+  //////////////////////////////////////////////////////////
+  // NORMALISE EMAIL
+  // Defence in depth — validator already lowercases
+  // but service should not trust upstream normalisation
+  //////////////////////////////////////////////////////////
+
+  const normalisedEmail = email.toLowerCase().trim();
 
   //////////////////////////////////////////////////////////
   // CHECK EXISTING USER
   //////////////////////////////////////////////////////////
 
   const existingUser = await prisma.user.findUnique({
-    where: {
-      email,
-    },
+    where: { email: normalisedEmail },
   });
 
   if (existingUser) {
@@ -37,9 +47,12 @@ async function registerUser(data) {
 
   //////////////////////////////////////////////////////////
   // HASH PASSWORD
+  // Rounds from environment — configurable per environment
+  // Development: 10, Production: 12, Testing: 1
   //////////////////////////////////////////////////////////
 
-  const hashedPassword = await bcrypt.hash(password, 10);
+  const rounds = Number(process.env.BCRYPT_ROUNDS) || 10;
+  const hashedPassword = await bcrypt.hash(password, rounds);
 
   //////////////////////////////////////////////////////////
   // CREATE USER
@@ -47,16 +60,16 @@ async function registerUser(data) {
 
   const user = await prisma.user.create({
     data: {
-      name,
-      email,
+      name: name.trim(),
+      email: normalisedEmail,
       password: hashedPassword,
       role,
-      propertyId,
+      propertyId: propertyId || null,
     },
   });
 
   //////////////////////////////////////////////////////////
-  // RETURN SAFE USER
+  // RETURN SAFE USER — no password in response
   //////////////////////////////////////////////////////////
 
   return safeUser(user);
@@ -70,29 +83,36 @@ async function loginUser(data) {
   const { email, password } = data;
 
   //////////////////////////////////////////////////////////
+  // NORMALISE EMAIL
+  //////////////////////////////////////////////////////////
+
+  const normalisedEmail = email.toLowerCase().trim();
+
+  //////////////////////////////////////////////////////////
   // FIND USER
   //////////////////////////////////////////////////////////
 
   const user = await prisma.user.findUnique({
-    where: {
-      email,
-    },
+    where: { email: normalisedEmail },
   });
 
-  if (!user) {
-    throw new Error("Invalid credentials");
-  }
+  //////////////////////////////////////////////////////////
+  // TIMING-SAFE PASSWORD CHECK
+  // Always run bcrypt.compare — even when user not found
+  // Prevents email enumeration via response time analysis
+  // If user not found → compare against dummy hash
+  // dummy hash always fails but takes same time as real check
+  //////////////////////////////////////////////////////////
+
+  const hashToCompare = user ? user.password : DUMMY_HASH;
+  const isMatch = await bcrypt.compare(password, hashToCompare);
 
   //////////////////////////////////////////////////////////
-  // CHECK PASSWORD
+  // REJECT IF USER NOT FOUND OR PASSWORD WRONG
+  // Same error message for both — no information leakage
   //////////////////////////////////////////////////////////
 
-  const isMatch = await bcrypt.compare(
-    password,
-    user.password
-  );
-
-  if (!isMatch) {
+  if (!user || !isMatch) {
     throw new Error("Invalid credentials");
   }
 

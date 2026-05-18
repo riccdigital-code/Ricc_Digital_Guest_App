@@ -8,11 +8,21 @@ frontend/node_modules/
 
 ##########################################################
 # ENV FILES
+# .env.example is intentionally NOT ignored
+# It contains no secrets — only key names
+# It must be committed so developers know what to set
 ##########################################################
 
 .env
+.env.local
+.env.production
+.env.staging
 backend/.env
+backend/.env.local
+backend/.env.production
 frontend/.env
+frontend/.env.local
+frontend/.env.production
 
 ##########################################################
 # DATABASE FILES
@@ -21,6 +31,8 @@ frontend/.env
 *.db
 *.sqlite
 *.sqlite3
+prisma/dev.db
+prisma/*.db
 
 ##########################################################
 # PRISMA GENERATED FILES
@@ -36,12 +48,13 @@ dist/
 build/
 coverage/
 docs/
+backups/
 
 ##########################################################
 # LOG FILES
 ##########################################################
 
-logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*

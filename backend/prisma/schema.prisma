@@ -1,6 +1,6 @@
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 generator client {
@@ -8,273 +8,266 @@ generator client {
 }
 
 //////////////////////////////////////////////////////////
-// 🏢 PROPERTY CORE (MULTI-TENANT FOUNDATION)
+// 🏢 PROPERTY CORE
+//////////////////////////////////////////////////////////
+// ... rest of your models (keep everything from here down)
+
+//////////////////////////////////////////////////////////
+// 🏢 PROPERTY
 //////////////////////////////////////////////////////////
 
 model Property {
-  id      Int    @id @default(autoincrement())
-  name    String
-  ownerId Int
-
+  id        Int      @id @default(autoincrement())
+  name      String
+  ownerId   Int
   createdAt DateTime @default(now())
 
-  //////////////////////////////////////////////////////////
-  // 🔗 RELATIONS (VERY IMPORTANT)
-  //////////////////////////////////////////////////////////
-
-  users           User[]
-  bookings        Booking[]
-  sessions        GuestSession[]
-  orders          Order[]
-  serviceRequest  ServiceRequest[]
-  tasks           Task[]
-  supportRequests SupportRequest[]
-  callLogs        CallLog[]
-
-  //////////////////////////////////////////////////////////
-  // 🆕 SERVICE SYSTEM (FIX FOR YOUR ERROR)
-  //////////////////////////////////////////////////////////
-
+  rooms             Room[]
+  users             User[]
+  bookings          Booking[]
+  sessions          GuestSession[]
+  orders            Order[]
   serviceCategories ServiceCategory[]
   serviceItems      ServiceItem[]
+  serviceRequests   ServiceRequest[]
+  tasks             Task[]
+  supportRequests   SupportRequest[]
+  callLogs          CallLog[]
 }
 
 //////////////////////////////////////////////////////////
-// 🗂️ SERVICE CATEGORY SYSTEM (ADMIN CONTROL)
+// 🗂️ SERVICE CATEGORY
 //////////////////////////////////////////////////////////
 
 model ServiceCategory {
-  id Int @id @default(autoincrement())
-
+  id         Int      @id @default(autoincrement())
   propertyId Int
-  property   Property @relation(fields: [propertyId], references: [id])
+  name       String
+  isActive   Boolean  @default(true)
+  type       String // "request" | "order"
+  createdAt  DateTime @default(now())
 
-  name     String // e.g. Food, Drinks, Cleaning
-  isActive Boolean @default(true)
-
-  type String // "request" | "order"
-
-  createdAt DateTime @default(now())
-
-  items ServiceItem[]
+  property Property      @relation(fields: [propertyId], references: [id])
+  items    ServiceItem[]
 }
 
 //////////////////////////////////////////////////////////
-// 🍽️ SERVICE ITEMS (ORDERABLE + REQUESTABLE)
+// 🍽️ SERVICE ITEM
 //////////////////////////////////////////////////////////
 
 model ServiceItem {
-  id Int @id @default(autoincrement())
-
+  id         Int      @id @default(autoincrement())
   propertyId Int
-  property   Property @relation(fields: [propertyId], references: [id])
-
   categoryId Int
-  category   ServiceCategory @relation(fields: [categoryId], references: [id])
+  name       String
+  price      Float?
+  isPaid     Boolean  @default(false)
+  isActive   Boolean  @default(true) // ✅ FIXED: was isAvailable
+  createdAt  DateTime @default(now())
 
-  name        String
-  price       Float
-  isAvailable Boolean @default(true)
-
-  createdAt DateTime    @default(now())
-  OrderItem OrderItem[]
+  property   Property         @relation(fields: [propertyId], references: [id])
+  category   ServiceCategory  @relation(fields: [categoryId], references: [id])
+  orderItems OrderItem[]
+  requests   ServiceRequest[]
 }
 
 //////////////////////////////////////////////////////////
-// 📅 BOOKING SYSTEM (ENTRY LOGIC)
+// 🏠 ROOM — permanent QR anchor
+//////////////////////////////////////////////////////////
+
+model Room {
+  id         Int      @id @default(autoincrement())
+  propertyId Int
+  roomNumber String
+  roomToken  String   @unique
+  floor      String?
+  roomType   String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  property Property       @relation(fields: [propertyId], references: [id])
+  sessions GuestSession[]
+  bookings Booking[]
+
+  callLogs CallLog[]
+
+  @@map("rooms")
+}
+
+//////////////////////////////////////////////////////////
+// 📅 BOOKING
 //////////////////////////////////////////////////////////
 
 model Booking {
-  id Int @id @default(autoincrement())
+  id            Int       @id @default(autoincrement())
+  propertyId    Int
+  firstName     String
+  surname       String
+  phone         String
+  roomNumber    String
+  roomId        Int?
+  checkInDate   DateTime  @default(now())
+  checkoutDate  DateTime? // ✅ FIXED: consistent lowercase
+  status        String    @default("pending")
+  paymentStatus String    @default("pending")
+  createdAt     DateTime  @default(now())
 
-  propertyId Int
-  property   Property @relation(fields: [propertyId], references: [id])
-
-  firstName  String
-  surname    String
-  phone      String
-  roomNumber String
-
-  checkInDate  DateTime  @default(now())
-  checkOutDate DateTime?
-
-  status        String @default("pending")
-  paymentStatus String @default("pending")
-
-  createdAt DateTime @default(now())
+  property Property       @relation(fields: [propertyId], references: [id])
+  room     Room?          @relation(fields: [roomId], references: [id])
+  sessions GuestSession[]
 }
 
 //////////////////////////////////////////////////////////
-// 🔐 GUEST SESSION (REAL-TIME STATE)
+// 👤 GUEST SESSION
 //////////////////////////////////////////////////////////
 
 model GuestSession {
-  id Int @id @default(autoincrement())
-
+  id         Int      @id @default(autoincrement())
   propertyId Int
-  property   Property @relation(fields: [propertyId], references: [id])
-
+  roomId     Int
   firstName  String
   surname    String
   phone      String
   roomNumber String
+  status     String   @default("active")
+  bookingId  Int?
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
 
-  status    String   @default("active")
-  expiresAt DateTime
-
-  createdAt DateTime @default(now())
+  property Property @relation(fields: [propertyId], references: [id])
+  room     Room     @relation(fields: [roomId], references: [id])
+  booking  Booking? @relation(fields: [bookingId], references: [id])
 }
 
 //////////////////////////////////////////////////////////
-// 🔥 ORDER SYSTEM
-//////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////
-// 🍔 ORDER SYSTEM
+// 🍔 ORDER
 //////////////////////////////////////////////////////////
 
 model Order {
-  id Int @id @default(autoincrement())
-
+  id         Int      @id @default(autoincrement())
   propertyId Int
-  property   Property @relation(fields: [propertyId], references: [id])
-
   roomNumber String
-  status     String @default("pending")
+  status     String   @default("pending")
+  createdAt  DateTime @default(now())
 
-  createdAt DateTime @default(now())
-
-  items OrderItem[]
+  property Property    @relation(fields: [propertyId], references: [id])
+  items    OrderItem[]
 }
 
 //////////////////////////////////////////////////////////
-// 🍔 ORDER ITEM (CONNECTED TO MENU ITEMS)
+// 🍔 ORDER ITEM
 //////////////////////////////////////////////////////////
 
 model OrderItem {
-  id      Int @id @default(autoincrement())
-  orderId Int
-
-  // 🔥 CONNECT TO MENU ITEM (IMPORTANT)
+  id            Int    @id @default(autoincrement())
+  orderId       Int
   serviceItemId Int
-  serviceItem   ServiceItem @relation(fields: [serviceItemId], references: [id])
+  quantity      Int
+  status        String @default("pending")
 
-  quantity Int
-  status   String @default("pending")
-
-  order Order  @relation(fields: [orderId], references: [id])
-  tasks Task[]
+  order       Order       @relation(fields: [orderId], references: [id])
+  serviceItem ServiceItem @relation(fields: [serviceItemId], references: [id])
+  tasks       Task[]
 }
 
 //////////////////////////////////////////////////////////
-// 🧹 SERVICE REQUEST SYSTEM
+// 🧹 SERVICE REQUEST
 //////////////////////////////////////////////////////////
 
 model ServiceRequest {
-  id Int @id @default(autoincrement())
+  id            Int      @id @default(autoincrement())
+  propertyId    Int
+  roomNumber    String
+  serviceItemId Int
+  note          String?
+  status        String   @default("pending")
+  createdAt     DateTime @default(now())
 
-  propertyId Int
-  property   Property @relation(fields: [propertyId], references: [id])
-
-  roomNumber  String
-  requestType String
-
-  status String @default("pending")
-
-  createdAt DateTime @default(now())
-
-  tasks Task[]
+  property    Property    @relation(fields: [propertyId], references: [id])
+  serviceItem ServiceItem @relation(fields: [serviceItemId], references: [id])
+  tasks       Task[]
 }
 
 //////////////////////////////////////////////////////////
-// 🔥 TASK ENGINE (CORE SYSTEM)
+// 🔥 TASK ENGINE
 //////////////////////////////////////////////////////////
 
 model Task {
-  id Int @id @default(autoincrement())
-
-  propertyId Int
-  property   Property @relation(fields: [propertyId], references: [id])
-
-  itemName String
-  status   String @default("pending")
-  priority String @default("medium")
-
+  id           Int      @id @default(autoincrement())
+  propertyId   Int
+  itemName     String
+  status       String   @default("pending")
+  priority     String   @default("normal") // ✅ FIXED: was "medium"
   assignedToId Int?
-  assignedTo   User? @relation("UserTasks", fields: [assignedToId], references: [id])
+  orderItemId  Int?
+  requestId    Int?
+  callLogId    Int?     @unique
+  createdAt    DateTime @default(now())
 
-  orderItemId Int?
-  requestId   Int?
-
-  orderItem OrderItem?      @relation(fields: [orderItemId], references: [id])
-  request   ServiceRequest? @relation(fields: [requestId], references: [id])
-
-  // ✅ FIXED
+  property        Property         @relation(fields: [propertyId], references: [id])
+  assignedTo      User?            @relation("UserTasks", fields: [assignedToId], references: [id])
+  orderItem       OrderItem?       @relation(fields: [orderItemId], references: [id])
+  request         ServiceRequest?  @relation(fields: [requestId], references: [id])
+  callLog         CallLog?         @relation(fields: [callLogId], references: [id])
   supportRequests SupportRequest[]
-
-  // ✅ FIXED
-  callLogId Int?     @unique
-  callLog   CallLog? @relation(fields: [callLogId], references: [id])
-
-  createdAt DateTime @default(now())
-}
-
-model User {
-  id       Int    @id @default(autoincrement())
-  name     String
-  email    String @unique
-  password String
-
-  role String // SUPER_ADMIN, ADMIN, STAFF, GUEST
-
-  propertyId Int?
-  property   Property? @relation(fields: [propertyId], references: [id])
-
-  tasks Task[] @relation("UserTasks")
-
-  createdAt DateTime @default(now())
 }
 
 //////////////////////////////////////////////////////////
-// 🆘 SUPPORT REQUEST SYSTEM
+// 👥 USER
+//////////////////////////////////////////////////////////
+
+model User {
+  id         Int      @id @default(autoincrement())
+  name       String
+  email      String   @unique
+  password   String
+  role       String
+  propertyId Int?
+  createdAt  DateTime @default(now())
+
+  property Property? @relation(fields: [propertyId], references: [id]) // ✅ FIXED: optional
+  tasks    Task[]    @relation("UserTasks")
+}
+
+//////////////////////////////////////////////////////////
+// 🆘 SUPPORT REQUEST
 //////////////////////////////////////////////////////////
 
 model SupportRequest {
-  id Int @id @default(autoincrement())
-
+  id         Int      @id @default(autoincrement())
   propertyId Int
-  property   Property @relation(fields: [propertyId], references: [id])
-
   roomNumber String
   phone      String?
+  status     String   @default("open")
+  taskId     Int?
+  createdAt  DateTime @default(now())
 
-  status String @default("open")
-
-  // OPTIONAL LINK TO TASK ENGINE
-  taskId Int?
-  task   Task? @relation(fields: [taskId], references: [id])
-
-  createdAt DateTime @default(now())
+  property Property @relation(fields: [propertyId], references: [id])
+  task     Task?    @relation(fields: [taskId], references: [id])
 }
 
 //////////////////////////////////////////////////////////
-// 📞 CALL LOG (ROOM QR CALL FEATURE)
+// 📞 CALL LOG
 //////////////////////////////////////////////////////////
 
 model CallLog {
-  id Int @id @default(autoincrement())
-
+  id         Int      @id @default(autoincrement())
   propertyId Int
-  property   Property @relation(fields: [propertyId], references: [id])
-
+  roomId     Int?
   roomNumber String
   phone      String?
-  urgency    String  @default("normal")
+  callType   String   @default("SUPPORT")
+  urgency    String   @default("normal")
+  status     String   @default("pending")
+  notes      String?
+  createdAt  DateTime @default(now())
 
-  //////////////////////////////////////////////////////////
-  // 🔗 ONE-WAY RELATION ONLY (NO fields/references here)
-  //////////////////////////////////////////////////////////
-  task Task?
+  property Property @relation(fields: [propertyId], references: [id])
+  room     Room?    @relation(fields: [roomId], references: [id])
+  task     Task?
 
-  createdAt DateTime @default(now())
+  @@index([propertyId])
+  @@index([roomId])
+  @@index([status])
+  @@map("call_logs")
 }

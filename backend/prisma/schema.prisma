@@ -7,6 +7,9 @@ generator client {
   provider = "prisma-client-js"
 }
 
+//////////////////////////////////////////////////////////
+// 🏢 PROPERTY CORE
+//////////////////////////////////////////////////////////
 model Property {
   id        Int      @id @default(autoincrement())
   name      String
@@ -25,8 +28,13 @@ model Property {
   tasks             Task[]
   supportRequests   SupportRequest[]
   callLogs          CallLog[]
+
+  @@index([ownerId])
 }
 
+//////////////////////////////////////////////////////////
+// SERVICE MODELS
+//////////////////////////////////////////////////////////
 model ServiceCategory {
   id         Int      @id @default(autoincrement())
   propertyId Int
@@ -54,8 +62,8 @@ model ServiceItem {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  property   Property        @relation(fields: [propertyId], references: [id])
-  category   ServiceCategory @relation(fields: [categoryId], references: [id])
+  property   Property         @relation(fields: [propertyId], references: [id])
+  category   ServiceCategory  @relation(fields: [categoryId], references: [id])
   orderItems OrderItem[]
   requests   ServiceRequest[]
 
@@ -64,6 +72,9 @@ model ServiceItem {
   @@index([categoryId])
 }
 
+//////////////////////////////////////////////////////////
+// ROOM, BOOKING, SESSION
+//////////////////////////////////////////////////////////
 model Room {
   id         Int      @id @default(autoincrement())
   propertyId Int
@@ -131,6 +142,9 @@ model GuestSession {
   @@index([status])
 }
 
+//////////////////////////////////////////////////////////
+// ORDER SYSTEM
+//////////////////////////////////////////////////////////
 model Order {
   id         Int      @id @default(autoincrement())
   propertyId Int
@@ -162,6 +176,9 @@ model OrderItem {
   @@index([serviceItemId])
 }
 
+//////////////////////////////////////////////////////////
+// REQUEST + TASK + SUPPORT + CALL
+//////////////////////////////////////////////////////////
 model ServiceRequest {
   id            Int      @id @default(autoincrement())
   propertyId    Int
@@ -193,18 +210,17 @@ model Task {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  property        Property        @relation(fields: [propertyId], references: [id])
-  assignedTo      User?           @relation("UserTasks", fields: [assignedToId], references: [id])
-  orderItem       OrderItem?      @relation(fields: [orderItemId], references: [id])
-  request         ServiceRequest? @relation(fields: [requestId], references: [id])
-  callLog         CallLog?        @relation(fields: [callLogId], references: [id])
+  property        Property         @relation(fields: [propertyId], references: [id])
+  assignedTo      User?            @relation("UserTasks", fields: [assignedToId], references: [id])
+  orderItem       OrderItem?       @relation(fields: [orderItemId], references: [id])
+  request         ServiceRequest?  @relation(fields: [requestId], references: [id])
+  callLog         CallLog?         @relation(fields: [callLogId], references: [id])
   supportRequests SupportRequest[]
 
   @@index([propertyId])
   @@index([assignedToId])
   @@index([status])
   @@index([propertyId, status])
-  @@index([assignedToId, status])
 }
 
 model User {

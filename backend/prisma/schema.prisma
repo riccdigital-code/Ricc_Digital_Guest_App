@@ -8,8 +8,9 @@ generator client {
 }
 
 //////////////////////////////////////////////////////////
-// 🏢 PROPERTY CORE
+// 🏢 PROPERTY
 //////////////////////////////////////////////////////////
+
 model Property {
   id        Int      @id @default(autoincrement())
   name      String
@@ -28,13 +29,12 @@ model Property {
   tasks             Task[]
   supportRequests   SupportRequest[]
   callLogs          CallLog[]
-
-  @@index([ownerId])
 }
 
 //////////////////////////////////////////////////////////
-// SERVICE MODELS
+// 🗂️ SERVICE CATEGORY
 //////////////////////////////////////////////////////////
+
 model ServiceCategory {
   id         Int      @id @default(autoincrement())
   propertyId Int
@@ -51,6 +51,10 @@ model ServiceCategory {
   @@index([propertyId])
 }
 
+//////////////////////////////////////////////////////////
+// 🍽️ SERVICE ITEM
+//////////////////////////////////////////////////////////
+
 model ServiceItem {
   id         Int      @id @default(autoincrement())
   propertyId Int
@@ -62,8 +66,8 @@ model ServiceItem {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  property   Property         @relation(fields: [propertyId], references: [id])
-  category   ServiceCategory  @relation(fields: [categoryId], references: [id])
+  property   Property        @relation(fields: [propertyId], references: [id])
+  category   ServiceCategory @relation(fields: [categoryId], references: [id])
   orderItems OrderItem[]
   requests   ServiceRequest[]
 
@@ -73,8 +77,9 @@ model ServiceItem {
 }
 
 //////////////////////////////////////////////////////////
-// ROOM, BOOKING, SESSION
+// 🏠 ROOM — permanent QR anchor
 //////////////////////////////////////////////////////////
+
 model Room {
   id         Int      @id @default(autoincrement())
   propertyId Int
@@ -95,6 +100,10 @@ model Room {
   @@index([propertyId])
   @@map("rooms")
 }
+
+//////////////////////////////////////////////////////////
+// 📅 BOOKING
+//////////////////////////////////////////////////////////
 
 model Booking {
   id            Int       @id @default(autoincrement())
@@ -118,6 +127,10 @@ model Booking {
   @@index([propertyId])
   @@index([roomId])
 }
+
+//////////////////////////////////////////////////////////
+// 👤 GUEST SESSION
+//////////////////////////////////////////////////////////
 
 model GuestSession {
   id         Int      @id @default(autoincrement())
@@ -143,8 +156,9 @@ model GuestSession {
 }
 
 //////////////////////////////////////////////////////////
-// ORDER SYSTEM
+// 🍔 ORDER
 //////////////////////////////////////////////////////////
+
 model Order {
   id         Int      @id @default(autoincrement())
   propertyId Int
@@ -158,6 +172,10 @@ model Order {
 
   @@index([propertyId])
 }
+
+//////////////////////////////////////////////////////////
+// 🍔 ORDER ITEM
+//////////////////////////////////////////////////////////
 
 model OrderItem {
   id            Int      @id @default(autoincrement())
@@ -177,8 +195,9 @@ model OrderItem {
 }
 
 //////////////////////////////////////////////////////////
-// REQUEST + TASK + SUPPORT + CALL
+// 🧹 SERVICE REQUEST
 //////////////////////////////////////////////////////////
+
 model ServiceRequest {
   id            Int      @id @default(autoincrement())
   propertyId    Int
@@ -197,6 +216,10 @@ model ServiceRequest {
   @@index([serviceItemId])
 }
 
+//////////////////////////////////////////////////////////
+// 🔥 TASK ENGINE
+//////////////////////////////////////////////////////////
+
 model Task {
   id           Int      @id @default(autoincrement())
   propertyId   Int
@@ -210,18 +233,23 @@ model Task {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  property        Property         @relation(fields: [propertyId], references: [id])
-  assignedTo      User?            @relation("UserTasks", fields: [assignedToId], references: [id])
-  orderItem       OrderItem?       @relation(fields: [orderItemId], references: [id])
-  request         ServiceRequest?  @relation(fields: [requestId], references: [id])
-  callLog         CallLog?         @relation(fields: [callLogId], references: [id])
+  property        Property        @relation(fields: [propertyId], references: [id])
+  assignedTo      User?           @relation("UserTasks", fields: [assignedToId], references: [id])
+  orderItem       OrderItem?      @relation(fields: [orderItemId], references: [id])
+  request         ServiceRequest? @relation(fields: [requestId], references: [id])
+  callLog         CallLog?        @relation(fields: [callLogId], references: [id])
   supportRequests SupportRequest[]
 
   @@index([propertyId])
   @@index([assignedToId])
   @@index([status])
   @@index([propertyId, status])
+  @@index([assignedToId, status])
 }
+
+//////////////////////////////////////////////////////////
+// 👥 USER
+//////////////////////////////////////////////////////////
 
 model User {
   id         Int      @id @default(autoincrement())
@@ -241,6 +269,10 @@ model User {
   @@index([propertyId, role])
 }
 
+//////////////////////////////////////////////////////////
+// 🆘 SUPPORT REQUEST
+//////////////////////////////////////////////////////////
+
 model SupportRequest {
   id         Int      @id @default(autoincrement())
   propertyId Int
@@ -256,6 +288,10 @@ model SupportRequest {
 
   @@index([propertyId])
 }
+
+//////////////////////////////////////////////////////////
+// 📞 CALL LOG
+//////////////////////////////////////////////////////////
 
 model CallLog {
   id         Int      @id @default(autoincrement())

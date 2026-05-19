@@ -4,8 +4,9 @@
 //
 // FIELD ALIGNMENT:
 //   Schema has:    propertyId, roomNumber, phone, urgency, callType, notes
-//   Validator has: propertyId, roomNumber, phone, callType, notes
-//   Service uses:  propertyId, roomNumber, phone, urgency (derived from callType)
+//   Validator has: roomNumber, callType, phone, notes
+//   Service uses:  roomNumber, callType, phone, notes
+//                  propertyId from JWT token only
 //
 // URGENCY:
 //   Not an input field — derived from callType in callService
@@ -15,7 +16,6 @@
 
 const { z } = require("zod");
 const {
-  propertyIdSchema,
   roomNumberSchema,
   phoneNumberSchema,
   callTypeSchema,

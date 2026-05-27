@@ -144,6 +144,11 @@ export default function Dashboard() {
                     <th className="px-6 py-3">Priority</th>
                     {isAdmin && <th className="px-6 py-3">Assigned To</th>}
                     <th className="px-6 py-3">Created</th>
+                    {isStaff && (
+
+  <th className="px-6 py-3">Actions</th>
+)}
+
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -164,6 +169,32 @@ export default function Dashboard() {
                       <td className="px-6 py-4 text-xs text-slate-400">
                         {new Date(task.createdAt).toLocaleDateString()}
                       </td>
+                      {isStaff && (
+
+  <td className="px-6 py-4">
+    <div className="flex flex-wrap gap-2">
+
+```
+  {allowedActions(task.status).map((action) => (
+
+    <button
+      key={action.next}
+      onClick={() =>
+        updateTaskStatus(task.id, action.next)
+      }
+      className="text-xs px-3 py-1.5 rounded-lg bg-slate-900 text-white hover:bg-slate-700 transition-colors"
+    >
+      {action.label}
+    </button>
+
+  ))}
+
+</div>
+```
+
+  </td>
+)}
+
                     </tr>
                   ))}
                 </tbody>

@@ -12,6 +12,8 @@ const authenticate = require("../middleware/authMiddleware");
 const authorizeRoles = require("../middleware/roleMiddleware");
 const { generateToken } = require("../utils/jwt");
 const safeUser = require("../utils/safeUser");
+// ADD import at the top of the file
+const { getPropertyFilter } = require("../utils/scopeByRole");
 
 //////////////////////////////////////////////////////////
 // BOOKING STATUS LIFECYCLE
@@ -44,7 +46,7 @@ router.post("/rooms",
       const { roomNumber, floor, roomType } = req.body;
 
       if (!roomNumber || roomNumber.trim() === "") {
-        return res.status(400).json({ error: "roomNumber is required" });
+        return res.status(400).json({ error: "roomNumber is required", code: "MISSING_FIELD" });
       }
 
       const propertyId = req.user.propertyId;
@@ -132,24 +134,24 @@ router.post("/",
       const { firstName, surname, phone, roomNumber, checkoutDate } = req.body;
 
       if (!firstName || firstName.trim() === "") {
-        return res.status(400).json({ error: "firstName is required" });
+        return res.status(400).json({ error: "firstName is required", code: "MISSING_FIELD" });
       }
 
       if (!surname || surname.trim() === "") {
-        return res.status(400).json({ error: "surname is required" });
+        return res.status(400).json({ error: "surname is required", code: "MISSING_FIELD" });
       }
 
       if (!phone || phone.trim() === "") {
-        return res.status(400).json({ error: "phone is required" });
+        return res.status(400).json({ error: "phone is required", code: "MISSING_FIELD" });
       }
 
       if (!roomNumber || roomNumber.trim() === "") {
-        return res.status(400).json({ error: "roomNumber is required" });
+        return res.status(400).json({ error: "roomNumber is required", code: "MISSING_FIELD" });
       }
 
       if (!checkoutDate || isNaN(new Date(checkoutDate).getTime())) {
         return res.status(400).json({
-          error: "checkoutDate is required and must be a valid date",
+          error: "checkoutDate is required and must be a valid date", code: "MISSING_FIELD"
         });
       }
 
@@ -157,7 +159,7 @@ router.post("/",
 
       if (checkout <= new Date()) {
         return res.status(400).json({
-          error: "checkoutDate must be in the future",
+          error: "checkoutDate must be in the future", code: "INVALID_DATE"
         });
       }
 
@@ -255,16 +257,17 @@ router.post("/",
         //////////////////////////////////////////////////////////
 
         const guestEmail =
-          `guest_${phone.trim()}_prop${propertyId}@riccdigital.internal`;
+          `guest_${session.phone}_prop${session.propertyId}@riccdigital.internal`;
 
         let guestUser = await tx.user.findFirst({
           where: { email: guestEmail },
         });
 
         if (!guestUser) {
+          const rounds = Number(process.env.BCRYPT_ROUNDS) || 10;
           const hashedPassword = await bcrypt.hash(
-            crypto.randomBytes(16).toString("hex"),
-            10
+          crypto.randomBytes(16).toString("hex"),
+          rounds
           );
 
           guestUser = await tx.user.create({
@@ -385,10 +388,9 @@ router.get("/room-access/:roomToken", async (req, res) => {
 
     const guestUser = await prisma.user.findFirst({
       where: {
+        email: guestEmail,
         role: "GUEST",
-        propertyId: room.propertyId,
-        name: `${session.firstName} ${session.surname}`,
-      },
+    },
     });
 
     if (!guestUser) {
@@ -411,15 +413,21 @@ router.get("/room-access/:roomToken", async (req, res) => {
     //////////////////////////////////////////////////////////
     // RESPONSE — frontend stores JWT, loads dashboard
     //////////////////////////////////////////////////////////
+    const now           = new Date();
+    const msUntilCheckout = session.expiresAt.getTime() - now.getTime();
+    const daysUntilCheckout = Math.ceil(msUntilCheckout / (1000 * 60 * 60 * 24));
 
     res.json({
       message: `Welcome to Room ${room.roomNumber}.`,
       token,
       guest: safeUser(guestUser),
       room: {
-        roomNumber: room.roomNumber,
-        propertyId: room.propertyId,
-        checkoutDate: session.expiresAt,
+        roomNumber:       room.roomNumber,
+        floor:            room.floor,
+        roomType:         room.roomType,
+        propertyId:       room.propertyId,
+        checkoutDate:     session.expiresAt,
+        daysUntilCheckout,
       },
     });
 
@@ -443,7 +451,7 @@ router.get("/check",
       const { roomNumber } = req.query;
 
       if (!roomNumber) {
-        return res.status(400).json({ error: "roomNumber is required" });
+        return res.status(400).json({ error: "roomNumber is required", code: "MISSING_FIELD" });
       }
 
       const propertyId = req.user.propertyId;
@@ -493,11 +501,7 @@ router.get("/",
   async (req, res) => {
     try {
 
-      const filters = {};
-
-      if (req.user.role === "ADMIN") {
-        filters.propertyId = req.user.propertyId;
-      }
+      const filters = getPropertyFilter(req.user);
 
       const { status } = req.query;
 
@@ -516,7 +520,7 @@ router.get("/",
         orderBy: { createdAt: "desc" },
       });
 
-      res.json({ bookings });
+      res.json({ bookings, total: bookings.length });
 
     } catch (error) {
       console.error("❌ Fetch bookings error:", error);
@@ -574,7 +578,17 @@ router.get("/rooms",
         qrUrl: `${process.env.APP_URL}/g/room/${room.roomToken}`,
       }));
 
-      res.json({ rooms: roomsWithStatus });
+      const occupied = roomsWithStatus.filter(r => r.occupied).length;
+      const vacant   = roomsWithStatus.filter(r => !r.occupied).length;
+
+      res.json({
+        rooms: roomsWithStatus,
+        summary: {
+        total:    roomsWithStatus.length,
+        occupied,
+        vacant,
+      },
+    });
 
     } catch (error) {
       console.error("❌ Fetch rooms error:", error);

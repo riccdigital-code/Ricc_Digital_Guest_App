@@ -9,6 +9,9 @@ const prisma = require("../prismaClient");
 const authenticate = require("../middleware/authMiddleware");
 const authorizeRoles = require("../middleware/roleMiddleware");
 
+// ADD import at the top of the file
+const { getPropertyFilter } = require("../utils/scopeByRole");
+
 //////////////////////////////////////////////////////////
 // EXTENSION LIMITS
 // Prevents abuse of session extension
@@ -139,13 +142,13 @@ router.patch("/:id/extend",
 
       if (extraHours < MIN_EXTENSION_HOURS) {
         return res.status(400).json({
-          error: `Minimum extension is ${MIN_EXTENSION_HOURS} hour`,
+          error: `Minimum extension is ${MIN_EXTENSION_HOURS} hour`, code: "BELOW_MIN_HOURS"
         });
       }
 
       if (extraHours > MAX_EXTENSION_HOURS) {
         return res.status(400).json({
-          error: `Maximum extension is ${MAX_EXTENSION_HOURS} hours (${MAX_EXTENSION_HOURS / 24} days) per request`,
+          error: `Maximum extension is ${MAX_EXTENSION_HOURS} hours (${MAX_EXTENSION_HOURS / 24} days) per request`, code: "ABOVE_MAX_HOURS"
         });
       }
 
@@ -352,14 +355,25 @@ router.get("/",
   async (req, res) => {
     try {
 
-      const propertyId =
-        req.user.role === "ADMIN" ? req.user.propertyId : undefined;
+      const propertyFilter = getPropertyFilter(req.user);
 
       const { status } = req.query;
 
+      // ✅ Validate status filter
+      const validStatuses = ["active", "inactive"];
+
+      if (status && !validStatuses.includes(status)) {
+        return res.status(400).json({
+          error: "Invalid status filter",
+          code: "INVALID_STATUS",
+          message: `Status must be one of: ${validStatuses.join(", ")}`,
+          validStatuses
+        });
+      }
+
       const sessions = await prisma.guestSession.findMany({
         where: {
-          ...(propertyId && { propertyId }),
+          ...propertyFilter,
           ...(status && { status }),
         },
         select: {
@@ -381,7 +395,7 @@ router.get("/",
         orderBy: { createdAt: "desc" },
       });
 
-      res.json({ sessions });
+      res.json({ sessions, total: sessions.length });
 
     } catch (error) {
       console.error("❌ Fetch sessions error:", error);

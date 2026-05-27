@@ -146,7 +146,7 @@ router.get("/",
         },
       });
 
-      res.json({ properties });
+      res.json({ properties, total: properties.length });
 
     } catch (error) {
       console.error("❌ Fetch properties error:", error);
@@ -312,7 +312,7 @@ router.get("/:id/staff",
         orderBy: { name: "asc" },
       });
 
-      res.json({ staff });
+      res.json({ staff, total: staff.length });
 
     } catch (error) {
       console.error("❌ Fetch staff error:", error);

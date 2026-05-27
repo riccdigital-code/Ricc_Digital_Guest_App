@@ -21,6 +21,9 @@ const authorizeRoles = require("../middleware/roleMiddleware");
 const { validate }   = require("../middleware/validate");
 const { getPropertyFilter, canAccessProperty, forbiddenResponse } =
   require("../utils/scopeByRole");
+const {
+  validateStatusTransition,
+} = require("../utils/taskTransitions");
 
 const {
   updateTaskStatusSchema,
@@ -32,8 +35,6 @@ const { notifyTaskUpdated, notifyTaskReassigned } =
 
 const {
   TASK_STATUSES,
-  TASK_STATUS_TRANSITIONS,
-  ACTIVE_TASK_STATUSES,
 } = require("../constants/taskStatuses");
 
 const { PRIORITIES } = require("../constants/priorities");
@@ -324,17 +325,12 @@ router.patch("/:id/status",
       // VALIDATE TRANSITION — state machine enforced
       //////////////////////////////////////////////////////////
 
-      const currentStatus  = task.status;
-      const allowedNext    = TASK_STATUS_TRANSITIONS[currentStatus] || [];
+      const currentStatus = task.status;
+const transition    = validateStatusTransition(currentStatus, status);
 
-      if (!allowedNext.includes(status)) {
-        return res.status(400).json({
-          error:              `Cannot transition from "${currentStatus}" to "${status}"`,
-          code:               "INVALID_TRANSITION",
-          currentStatus,
-          allowedTransitions: allowedNext,
-        });
-      }
+if (!transition.valid) {
+  return res.status(400).json(transition);
+}
 
       const updatedTask = await prisma.task.update({
         where: { id: taskId },

@@ -185,7 +185,7 @@ app.use("/api/calls",       callRoutes);
 app.use("/api/call-admin",  callAdminRoutes);
 app.use("/api/properties",  propertyRoutes);
 app.use("/api/categories",  categoryRoutes);
-app.use("/api/items",       serviceItemRoutes);
+app.use("/api/service-items", serviceItemRoutes);
 
 //////////////////////////////////////////////////////////
 // HEALTH ROUTES
@@ -268,13 +268,16 @@ async function startServer() {
   try {
     await prisma.$connect();
     console.log("🗄️  Database: connected");
+    const dbHost = process.env.DATABASE_URL?.split("@")[1]?.split("/")[0] || "unknown";
 
     server.listen(PORT, () => {
-      console.log(`\n🚀 Ricc Digital Server running on port ${PORT}`);
-      console.log(`📡 Environment: ${process.env.NODE_ENV}`);
-      console.log(`🗄️  Database:    PostgreSQL`);
-      console.log(`🔌 Socket.IO:   enabled\n`);
-    });
+    console.log(`\n🚀 Ricc Digital Server running on port ${PORT}`);
+    console.log(`📡 Environment: ${process.env.NODE_ENV}`);
+    console.log(`🗄️  Database:    PostgreSQL @ ${dbHost}`);
+    console.log(`🔌 Socket.IO:   enabled`);
+    console.log(`🌐 CORS:        ${process.env.CORS_ORIGIN}`);
+    console.log(`📋 Routes:      11 route files registered\n`);
+  });
 
   } catch (error) {
     console.error("❌ Database connection failed:", error.message);

@@ -24,7 +24,9 @@ export const Route = createFileRoute("/escalations")({
                     <span className="text-xs text-muted-foreground">{e.property}</span>
                     <StatusPill status={e.priority} />
                   </div>
-                  <div className="mt-1 font-medium">Room {e.room} — {e.issue}</div>
+                  <div className="mt-1 font-medium">
+                    Room {e.room} — {e.issue}
+                  </div>
                   <div className="text-xs text-muted-foreground mt-1">Elapsed {e.elapsed}</div>
                 </div>
                 <button className="rounded-md bg-gradient-gold px-4 py-2 text-xs font-semibold text-primary-foreground shadow-gold whitespace-nowrap">

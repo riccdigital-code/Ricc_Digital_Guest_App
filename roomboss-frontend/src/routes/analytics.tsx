@@ -3,12 +3,23 @@ import { TopBar } from "@/components/dashboard/TopBar";
 import { Panel } from "@/components/dashboard/Primitives";
 import { occupancyTrend, responseByCategory, requestVolume } from "@/lib/mock-data";
 import {
-  LineChart, Line, ResponsiveContainer, CartesianGrid, XAxis, YAxis, Tooltip,
-  BarChart, Bar,
+  LineChart,
+  Line,
+  ResponsiveContainer,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  BarChart,
+  Bar,
 } from "recharts";
 
 const grid = "oklch(0.30 0.012 75 / 0.35)";
-const tip = { background: "oklch(0.18 0.005 60)", border: "1px solid oklch(0.78 0.13 82 / 0.25)", borderRadius: 8 };
+const tip = {
+  background: "oklch(0.18 0.005 60)",
+  border: "1px solid oklch(0.78 0.13 82 / 0.25)",
+  borderRadius: 8,
+};
 
 export const Route = createFileRoute("/analytics")({
   head: () => ({ meta: [{ title: "Operational Analytics — RoomBoss" }] }),
@@ -24,7 +35,13 @@ export const Route = createFileRoute("/analytics")({
                 <XAxis dataKey="month" stroke="oklch(0.7 0.012 80)" fontSize={12} />
                 <YAxis stroke="oklch(0.7 0.012 80)" fontSize={12} domain={[60, 100]} />
                 <Tooltip contentStyle={tip} />
-                <Line type="monotone" dataKey="occ" stroke="oklch(0.82 0.14 85)" strokeWidth={3} dot={{ fill: "oklch(0.82 0.14 85)" }} />
+                <Line
+                  type="monotone"
+                  dataKey="occ"
+                  stroke="oklch(0.82 0.14 85)"
+                  strokeWidth={3}
+                  dot={{ fill: "oklch(0.82 0.14 85)" }}
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -50,8 +67,8 @@ export const Route = createFileRoute("/analytics")({
                 <XAxis dataKey="day" stroke="oklch(0.7 0.012 80)" fontSize={12} />
                 <YAxis stroke="oklch(0.7 0.012 80)" fontSize={12} />
                 <Tooltip contentStyle={tip} />
-                <Bar dataKey="requests" fill="oklch(0.82 0.14 85)" radius={[6,6,0,0]} />
-                <Bar dataKey="resolved" fill="oklch(0.55 0.09 80)" radius={[6,6,0,0]} />
+                <Bar dataKey="requests" fill="oklch(0.82 0.14 85)" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="resolved" fill="oklch(0.55 0.09 80)" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

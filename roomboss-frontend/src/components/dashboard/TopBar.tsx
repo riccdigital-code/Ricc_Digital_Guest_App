@@ -5,7 +5,10 @@ export function TopBar({ title, subtitle }: { title: string; subtitle?: string }
   return (
     <header className="flex items-center justify-between gap-4 border-b border-border/60 bg-background/60 backdrop-blur px-4 lg:px-8 py-4">
       <div className="flex items-center gap-3 min-w-0">
-        <Link to="/" className="lg:hidden h-9 w-9 grid place-items-center rounded-md bg-card hairline">
+        <Link
+          to="/"
+          className="lg:hidden h-9 w-9 grid place-items-center rounded-md bg-card hairline"
+        >
           <Menu className="h-4 w-4 text-primary" />
         </Link>
         <div className="min-w-0">

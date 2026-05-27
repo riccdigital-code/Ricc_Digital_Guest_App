@@ -18,7 +18,7 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 // Response Interceptor - Handle 401 globally
@@ -31,7 +31,7 @@ api.interceptors.response.use(
       window.location.href = "/login"; // Better than "/"
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;

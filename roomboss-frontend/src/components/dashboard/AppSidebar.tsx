@@ -1,7 +1,15 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
-  LayoutDashboard, Building2, AlertTriangle, ClipboardList, BarChart3,
-  ConciergeBell, Users, ScrollText, Sparkles, BellRing,
+  LayoutDashboard,
+  Building2,
+  AlertTriangle,
+  ClipboardList,
+  BarChart3,
+  ConciergeBell,
+  Users,
+  ScrollText,
+  Sparkles,
+  BellRing,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -25,15 +33,11 @@ const groups = [
   },
   {
     label: "Staff",
-    items: [
-      { to: "/my-tasks", icon: ClipboardList, label: "My Tasks" },
-    ],
+    items: [{ to: "/my-tasks", icon: ClipboardList, label: "My Tasks" }],
   },
   {
     label: "Guest",
-    items: [
-      { to: "/guest", icon: Sparkles, label: "Guest Requests" },
-    ],
+    items: [{ to: "/guest", icon: Sparkles, label: "Guest Requests" }],
   },
 ];
 

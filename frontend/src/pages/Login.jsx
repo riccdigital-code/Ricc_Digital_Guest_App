@@ -1,145 +1,97 @@
-// src/pages/Login.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+
 import api from "../api/client";
+import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
-  const navigate       = useNavigate();
-  const { login }      = useAuth();
 
-  const [email,    setEmail]    = useState("");
+  const navigate = useNavigate();
+
+  const { login } = useAuth();
+
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error,    setError]    = useState("");
-  const [loading,  setLoading]  = useState(false);
 
-  //////////////////////////////////////////////////////////
-  // HANDLE LOGIN
-  //////////////////////////////////////////////////////////
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = async () => {
-
-    //////////////////////////////////////////////////////////
-    // CLIENT-SIDE VALIDATION
-    //////////////////////////////////////////////////////////
-
-    if (!email.trim()) {
-      setError("Please enter your email address.");
-      return;
-    }
-    if (!password.trim()) {
-      setError("Please enter your password.");
-      return;
-    }
+  async function handleLogin() {
 
     setError("");
     setLoading(true);
 
     try {
 
-      const res = await api.post("/api/auth/login", { email, password });
-
-      //////////////////////////////////////////////////////////
-      // STORE TOKEN + USER IN AUTH CONTEXT
-      //////////////////////////////////////////////////////////
+      const res = await api.post("/api/auth/login", {
+        email,
+        password,
+      });
 
       login(res.data.token, res.data.user);
-
-      //////////////////////////////////////////////////////////
-      // NAVIGATE TO DASHBOARD
-      //////////////////////////////////////////////////////////
 
       navigate("/dashboard");
 
     } catch (err) {
 
-      //////////////////////////////////////////////////////////
-      // SHOW MEANINGFUL ERROR TO USER
-      //////////////////////////////////////////////////////////
-
-      const status  = err.response?.status;
-      const message = err.response?.data?.error;
+      const status = err.response?.status;
 
       if (status === 401) {
-        setError("Incorrect email or password. Please try again.");
-      } else if (status === 400) {
-        setError(message || "Please check your inputs and try again.");
-      } else if (status === 429) {
-        setError("Too many login attempts. Please wait a few minutes.");
+        setError("Incorrect email or password.");
       } else {
-        setError("Unable to connect to the server. Please try again.");
+        setError("Unable to connect to server.");
       }
 
     } finally {
       setLoading(false);
     }
-  };
-
-  //////////////////////////////////////////////////////////
-  // ALLOW ENTER KEY TO SUBMIT
-  //////////////////////////////////////////////////////////
-
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter") handleLogin();
-  };
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100">
-      <div className="bg-white w-full max-w-md p-8 rounded-2xl shadow-lg">
+    <div className="min-h-screen bg-black flex items-center justify-center">
 
-        {/* Header */}
-        <h1 className="text-2xl font-bold mb-2 text-center text-slate-900">
-          RiccDigital
+      <div className="bg-zinc-900 p-8 rounded-2xl w-full max-w-md border border-yellow-600">
+
+        <h1 className="text-3xl font-bold text-yellow-500 mb-2">
+          RoomBoss
         </h1>
-        <p className="text-sm text-slate-500 text-center mb-6">
-          Hotel Operations Platform
+
+        <p className="text-zinc-400 mb-6">
+          Hospitality Operations Platform
         </p>
 
-        {/* Error Message */}
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+          <div className="bg-red-500/10 border border-red-500 text-red-400 p-3 rounded-lg mb-4 text-sm">
             {error}
           </div>
         )}
 
-        {/* Email Input */}
         <input
-          className="w-full p-3 mb-3 border border-slate-200 rounded-xl
-                     focus:outline-none focus:ring-2 focus:ring-black
-                     text-slate-900 placeholder-slate-400"
-          placeholder="Email address"
           type="email"
+          placeholder="Email"
+          className="w-full p-3 rounded-lg bg-zinc-800 text-white mb-4"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          onKeyDown={handleKeyDown}
-          disabled={loading}
         />
 
-        {/* Password Input */}
         <input
-          className="w-full p-3 mb-5 border border-slate-200 rounded-xl
-                     focus:outline-none focus:ring-2 focus:ring-black
-                     text-slate-900 placeholder-slate-400"
-          placeholder="Password"
           type="password"
+          placeholder="Password"
+          className="w-full p-3 rounded-lg bg-zinc-800 text-white mb-6"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          onKeyDown={handleKeyDown}
-          disabled={loading}
         />
 
-        {/* Submit Button */}
         <button
           onClick={handleLogin}
           disabled={loading}
-          className="w-full bg-slate-900 text-white p-3 rounded-xl
-                     font-semibold hover:bg-slate-700 transition-colors
-                     disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full bg-yellow-500 text-black font-bold p-3 rounded-lg"
         >
-          {loading ? "Signing in..." : "Sign In"}
+          {loading ? "Signing In..." : "Sign In"}
         </button>
 
       </div>
+
     </div>
   );
 }

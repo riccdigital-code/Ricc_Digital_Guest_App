@@ -1,14 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+// The root index acts purely as a routing pivot — the RouteGuard in
+// __root.tsx redirects every authenticated visitor to their role's home
+// dashboard, and unauthenticated visitors to /login.
 export const Route = createFileRoute("/")({
-  component: Home,
+  head: () => ({ meta: [{ title: "RoomBoss" }] }),
+  component: IndexRedirect,
 });
 
-function Home() {
+function IndexRedirect() {
   return (
-    <div className="p-10">
-      <h1 className="text-5xl font-bold text-gray-900 mb-4">Ricc Digital Guest App</h1>
-      <p className="text-2xl text-gray-600">Welcome to the Dashboard</p>
+    <div className="min-h-screen w-full grid place-items-center bg-background">
+      <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+        Loading your workspace…
+      </div>
     </div>
   );
 }

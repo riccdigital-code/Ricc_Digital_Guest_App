@@ -15,34 +15,10 @@ function Hotel() {
       <TopBar title="Operations Center" subtitle="The Aurelian — Paris · 218 rooms" />
       <div className="p-4 lg:p-8 space-y-6">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <MetricCard
-            label="Live Requests"
-            value="24"
-            delta="+6 vs avg"
-            trend="up"
-            icon={<Bell className="h-4 w-4" />}
-          />
-          <MetricCard
-            label="Avg Response"
-            value="6.4m"
-            delta="-1.2m"
-            trend="down"
-            icon={<Clock className="h-4 w-4" />}
-          />
-          <MetricCard
-            label="Staff On Shift"
-            value="38"
-            delta="+2"
-            trend="up"
-            icon={<Users className="h-4 w-4" />}
-          />
-          <MetricCard
-            label="Resolved Today"
-            value="186"
-            delta="+18%"
-            trend="up"
-            icon={<CheckCircle2 className="h-4 w-4" />}
-          />
+          <MetricCard label="Live Requests" value="24" delta="+6 vs avg" trend="up" icon={<Bell className="h-4 w-4" />} />
+          <MetricCard label="Avg Response" value="6.4m" delta="-1.2m" trend="down" icon={<Clock className="h-4 w-4" />} />
+          <MetricCard label="Staff On Shift" value="38" delta="+2" trend="up" icon={<Users className="h-4 w-4" />} />
+          <MetricCard label="Resolved Today" value="186" delta="+18%" trend="up" icon={<CheckCircle2 className="h-4 w-4" />} />
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
@@ -50,14 +26,7 @@ function Hotel() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                  <tr className="text-left">
-                    <th className="py-2">Request</th>
-                    <th>Room</th>
-                    <th>Type</th>
-                    <th>Assignee</th>
-                    <th>SLA</th>
-                    <th>Status</th>
-                  </tr>
+                  <tr className="text-left"><th className="py-2">Request</th><th>Room</th><th>Type</th><th>Assignee</th><th>SLA</th><th>Status</th></tr>
                 </thead>
                 <tbody>
                   {liveRequests.map((r) => (
@@ -75,9 +44,7 @@ function Hotel() {
                       </td>
                       <td className="text-muted-foreground">{r.assignee}</td>
                       <td>{r.sla}</td>
-                      <td>
-                        <StatusPill status={r.status} />
-                      </td>
+                      <td><StatusPill status={r.status} /></td>
                     </tr>
                   ))}
                 </tbody>
@@ -101,25 +68,14 @@ function Hotel() {
         </div>
 
         <div className="grid lg:grid-cols-2 gap-6">
-          <Panel
-            title="Staff Workload"
-            action={
-              <Link
-                to="/staff-workload"
-                className="text-xs text-primary inline-flex items-center gap-1"
-              >
-                Details <ArrowRight className="h-3 w-3" />
-              </Link>
-            }
-          >
+          <Panel title="Staff Workload"
+            action={<Link to="/staff-workload" className="text-xs text-primary inline-flex items-center gap-1">Details <ArrowRight className="h-3 w-3" /></Link>}>
             <ul className="space-y-3">
               {staffWorkload.map((s) => (
                 <li key={s.name} className="grid grid-cols-[1fr_auto] gap-3 items-center">
                   <div>
                     <div className="text-sm font-medium">{s.name}</div>
-                    <div className="text-[11px] text-muted-foreground">
-                      {s.role} · {s.active} active · {s.completed} done today
-                    </div>
+                    <div className="text-[11px] text-muted-foreground">{s.role} · {s.active} active · {s.completed} done today</div>
                     <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
                       <div className="h-full bg-gradient-gold" style={{ width: `${s.load}%` }} />
                     </div>
@@ -130,20 +86,12 @@ function Hotel() {
             </ul>
           </Panel>
 
-          <Panel
-            title="Recent Operational Activity"
-            action={
-              <Link to="/activity" className="text-xs text-primary inline-flex items-center gap-1">
-                Full log <ArrowRight className="h-3 w-3" />
-              </Link>
-            }
-          >
+          <Panel title="Recent Operational Activity"
+            action={<Link to="/activity" className="text-xs text-primary inline-flex items-center gap-1">Full log <ArrowRight className="h-3 w-3" /></Link>}>
             <ul className="space-y-3">
               {recentActivity.map((a, i) => (
                 <li key={i} className="flex items-start gap-3 text-sm">
-                  <div className="text-[11px] text-muted-foreground w-12 shrink-0 pt-0.5">
-                    {a.time}
-                  </div>
+                  <div className="text-[11px] text-muted-foreground w-12 shrink-0 pt-0.5">{a.time}</div>
                   <div className="h-2 w-2 rounded-full bg-primary mt-1.5 shrink-0" />
                   <div>
                     <span className="font-medium">{a.actor}</span>{" "}

@@ -6,10 +6,10 @@ import { recentActivity } from "@/lib/mock-data";
 const extended = [
   ...recentActivity,
   { time: "12:12", actor: "Lukas B.", action: "Replaced HVAC filter", target: "Room 1604" },
-  { time: "12:05", actor: "Sofía M.", action: "Welcomed VIP arrival", target: "Suite 0902" },
-  { time: "11:58", actor: "Amélie R.", action: "Restocked minibar", target: "Room 1110" },
-  { time: "11:44", actor: "System", action: "SLA breach prevented", target: "R-8801" },
-  { time: "11:30", actor: "Hiro T.", action: "Arranged private car", target: "Mr. Halberg" },
+  { time: "12:05", actor: "Sofía M.", action: "Welcomed VIP arrival",  target: "Suite 0902" },
+  { time: "11:58", actor: "Amélie R.", action: "Restocked minibar",    target: "Room 1110" },
+  { time: "11:44", actor: "System",   action: "SLA breach prevented",  target: "R-8801" },
+  { time: "11:30", actor: "Hiro T.",  action: "Arranged private car",   target: "Mr. Halberg" },
 ];
 
 export const Route = createFileRoute("/activity")({

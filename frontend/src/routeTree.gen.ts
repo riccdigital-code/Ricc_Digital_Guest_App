@@ -11,7 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as StaffWorkloadRouteImport } from './routes/staff-workload'
 import { Route as PropertiesRouteImport } from './routes/properties'
+import { Route as PlatformRouteImport } from './routes/platform'
 import { Route as MyTasksRouteImport } from './routes/my-tasks'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as HotelRouteImport } from './routes/hotel'
 import { Route as GuestRouteImport } from './routes/guest'
 import { Route as EscalationsRouteImport } from './routes/escalations'
@@ -29,9 +31,19 @@ const PropertiesRoute = PropertiesRouteImport.update({
   path: '/properties',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PlatformRoute = PlatformRouteImport.update({
+  id: '/platform',
+  path: '/platform',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MyTasksRoute = MyTasksRouteImport.update({
   id: '/my-tasks',
   path: '/my-tasks',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HotelRoute = HotelRouteImport.update({
@@ -72,7 +84,9 @@ export interface FileRoutesByFullPath {
   '/escalations': typeof EscalationsRoute
   '/guest': typeof GuestRoute
   '/hotel': typeof HotelRoute
+  '/login': typeof LoginRoute
   '/my-tasks': typeof MyTasksRoute
+  '/platform': typeof PlatformRoute
   '/properties': typeof PropertiesRoute
   '/staff-workload': typeof StaffWorkloadRoute
 }
@@ -83,7 +97,9 @@ export interface FileRoutesByTo {
   '/escalations': typeof EscalationsRoute
   '/guest': typeof GuestRoute
   '/hotel': typeof HotelRoute
+  '/login': typeof LoginRoute
   '/my-tasks': typeof MyTasksRoute
+  '/platform': typeof PlatformRoute
   '/properties': typeof PropertiesRoute
   '/staff-workload': typeof StaffWorkloadRoute
 }
@@ -95,7 +111,9 @@ export interface FileRoutesById {
   '/escalations': typeof EscalationsRoute
   '/guest': typeof GuestRoute
   '/hotel': typeof HotelRoute
+  '/login': typeof LoginRoute
   '/my-tasks': typeof MyTasksRoute
+  '/platform': typeof PlatformRoute
   '/properties': typeof PropertiesRoute
   '/staff-workload': typeof StaffWorkloadRoute
 }
@@ -108,7 +126,9 @@ export interface FileRouteTypes {
     | '/escalations'
     | '/guest'
     | '/hotel'
+    | '/login'
     | '/my-tasks'
+    | '/platform'
     | '/properties'
     | '/staff-workload'
   fileRoutesByTo: FileRoutesByTo
@@ -119,7 +139,9 @@ export interface FileRouteTypes {
     | '/escalations'
     | '/guest'
     | '/hotel'
+    | '/login'
     | '/my-tasks'
+    | '/platform'
     | '/properties'
     | '/staff-workload'
   id:
@@ -130,7 +152,9 @@ export interface FileRouteTypes {
     | '/escalations'
     | '/guest'
     | '/hotel'
+    | '/login'
     | '/my-tasks'
+    | '/platform'
     | '/properties'
     | '/staff-workload'
   fileRoutesById: FileRoutesById
@@ -142,7 +166,9 @@ export interface RootRouteChildren {
   EscalationsRoute: typeof EscalationsRoute
   GuestRoute: typeof GuestRoute
   HotelRoute: typeof HotelRoute
+  LoginRoute: typeof LoginRoute
   MyTasksRoute: typeof MyTasksRoute
+  PlatformRoute: typeof PlatformRoute
   PropertiesRoute: typeof PropertiesRoute
   StaffWorkloadRoute: typeof StaffWorkloadRoute
 }
@@ -163,11 +189,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PropertiesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/platform': {
+      id: '/platform'
+      path: '/platform'
+      fullPath: '/platform'
+      preLoaderRoute: typeof PlatformRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/my-tasks': {
       id: '/my-tasks'
       path: '/my-tasks'
       fullPath: '/my-tasks'
       preLoaderRoute: typeof MyTasksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/hotel': {
@@ -222,20 +262,12 @@ const rootRouteChildren: RootRouteChildren = {
   EscalationsRoute: EscalationsRoute,
   GuestRoute: GuestRoute,
   HotelRoute: HotelRoute,
+  LoginRoute: LoginRoute,
   MyTasksRoute: MyTasksRoute,
+  PlatformRoute: PlatformRoute,
   PropertiesRoute: PropertiesRoute,
   StaffWorkloadRoute: StaffWorkloadRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

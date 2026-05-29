@@ -11,6 +11,9 @@ const helmet     = require("helmet");
 const morgan     = require("morgan");
 const compression = require("compression");
 const { Server } = require("socket.io");
+const adminRoutes = require("./routes/adminRoutes");
+const escalationRoutes = require("./routes/escalationRoutes");
+
 
 //////////////////////////////////////////////////////////
 // INTERNAL IMPORTS
@@ -186,6 +189,9 @@ app.use("/api/call-admin",  callAdminRoutes);
 app.use("/api/properties",  propertyRoutes);
 app.use("/api/categories",  categoryRoutes);
 app.use("/api/service-items", serviceItemRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/escalations", escalationRoutes);
+
 
 //////////////////////////////////////////////////////////
 // HEALTH ROUTES
@@ -287,4 +293,6 @@ async function startServer() {
   }
 }
 
+
 startServer();
+

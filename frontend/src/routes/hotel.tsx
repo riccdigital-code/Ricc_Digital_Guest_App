@@ -1,8 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { TopBar } from "@/components/dashboard/TopBar";
 import { MetricCard, Panel, StatusPill } from "@/components/dashboard/Primitives";
-import { liveRequests, staffWorkload, operationalAlerts, recentActivity } from "@/lib/mock-data";
-import { Bell, Clock, Users, CheckCircle2, ArrowRight } from "lucide-react";
+import { Bell, Clock, Users, CheckCircle2, ArrowRight, ConciergeBell } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useApi } from "@/hooks/use-api";
+import { dashboardApi } from "@/lib/dashboard-api";
+import { useTaskEvents } from "@/hooks/use-task-events";
 
 export const Route = createFileRoute("/hotel")({
   head: () => ({ meta: [{ title: "Operations Center — RoomBoss" }] }),
@@ -10,15 +14,49 @@ export const Route = createFileRoute("/hotel")({
 });
 
 function Hotel() {
+  const { user } = useAuth();
+  const propertyId = user?.propertyId;
+
+  const stats     = useApi(() => dashboardApi.hotelStats(propertyId), {
+    liveRequests: 0, avgResponseMinutes: 0, staffOnShift: 0, resolvedToday: 0, activeGuestSessions: 0,
+  }, [propertyId]);
+  const requests  = useApi(() => dashboardApi.liveRequests(propertyId), [], [propertyId]);
+  const alerts    = useApi(() => dashboardApi.operationalAlerts(propertyId), [], [propertyId]);
+  const workload  = useApi(() => dashboardApi.staffWorkload(propertyId), [], [propertyId]);
+  const activity  = useApi(() => dashboardApi.recentActivity(propertyId), [], [propertyId]);
+
+  // Live refresh on relevant operational events
+  useTaskEvents({
+    onAny: () => {
+      stats.refetch();
+      requests.refetch();
+      activity.refetch();
+    },
+  });
+
+  // Keep alerts/workload in step with the rest at first paint
+  useEffect(() => { /* noop, kept for future socket plumbing */ }, []);
+
+  const fallback = [stats, requests, alerts, workload, activity].some((s) => s.fallback);
+
   return (
     <>
-      <TopBar title="Operations Center" subtitle="The Aurelian — Paris · 218 rooms" />
+      <TopBar title="Operations Center" subtitle={user?.name ? `${user.name} · Hotel operations` : "Hotel operations"} />
       <div className="p-4 lg:p-8 space-y-6">
+        {fallback && (
+          <div className="rounded-md bg-warning/10 text-warning text-xs px-3 py-2 hairline">
+            Some live endpoints unavailable — operational data is cached.
+          </div>
+        )}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <MetricCard label="Live Requests" value="24" delta="+6 vs avg" trend="up" icon={<Bell className="h-4 w-4" />} />
-          <MetricCard label="Avg Response" value="6.4m" delta="-1.2m" trend="down" icon={<Clock className="h-4 w-4" />} />
-          <MetricCard label="Staff On Shift" value="38" delta="+2" trend="up" icon={<Users className="h-4 w-4" />} />
-          <MetricCard label="Resolved Today" value="186" delta="+18%" trend="up" icon={<CheckCircle2 className="h-4 w-4" />} />
+          <MetricCard label="Live Requests" value={`${stats.data.liveRequests}`} icon={<Bell className="h-4 w-4" />} />
+          <MetricCard label="Avg Response" value={`${stats.data.avgResponseMinutes}m`} icon={<Clock className="h-4 w-4" />} />
+          <MetricCard label="Staff On Shift" value={`${stats.data.staffOnShift}`} icon={<Users className="h-4 w-4" />} />
+          <MetricCard label="Resolved Today" value={`${stats.data.resolvedToday}`} icon={<CheckCircle2 className="h-4 w-4" />} />
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <MetricCard label="Active Guest Sessions" value={`${stats.data.activeGuestSessions}`} icon={<ConciergeBell className="h-4 w-4" />} />
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
@@ -29,7 +67,7 @@ function Hotel() {
                   <tr className="text-left"><th className="py-2">Request</th><th>Room</th><th>Type</th><th>Assignee</th><th>SLA</th><th>Status</th></tr>
                 </thead>
                 <tbody>
-                  {liveRequests.map((r) => (
+                  {requests.data.map((r: any) => (
                     <tr key={r.id} className="border-t border-border/50 hover:bg-accent/30">
                       <td className="py-3">
                         <div className="font-medium">{r.id}</div>
@@ -47,6 +85,9 @@ function Hotel() {
                       <td><StatusPill status={r.status} /></td>
                     </tr>
                   ))}
+                  {requests.data.length === 0 && !requests.loading && (
+                    <tr><td colSpan={6} className="py-6 text-center text-xs text-muted-foreground">No live requests.</td></tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -54,7 +95,7 @@ function Hotel() {
 
           <Panel title="Operational Alerts">
             <ul className="space-y-3">
-              {operationalAlerts.map((a) => (
+              {alerts.data.map((a: any) => (
                 <li key={a.id} className="rounded-lg bg-background/50 hairline p-3">
                   <div className="flex items-start justify-between gap-2">
                     <StatusPill status={a.level} />
@@ -63,6 +104,9 @@ function Hotel() {
                   <p className="text-sm mt-2">{a.message}</p>
                 </li>
               ))}
+              {alerts.data.length === 0 && !alerts.loading && (
+                <li className="text-center text-xs text-muted-foreground py-6">No alerts.</li>
+              )}
             </ul>
           </Panel>
         </div>
@@ -71,7 +115,7 @@ function Hotel() {
           <Panel title="Staff Workload"
             action={<Link to="/staff-workload" className="text-xs text-primary inline-flex items-center gap-1">Details <ArrowRight className="h-3 w-3" /></Link>}>
             <ul className="space-y-3">
-              {staffWorkload.map((s) => (
+              {workload.data.map((s: any) => (
                 <li key={s.name} className="grid grid-cols-[1fr_auto] gap-3 items-center">
                   <div>
                     <div className="text-sm font-medium">{s.name}</div>
@@ -83,13 +127,16 @@ function Hotel() {
                   <div className="text-sm text-primary font-display text-xl">{s.load}%</div>
                 </li>
               ))}
+              {workload.data.length === 0 && !workload.loading && (
+                <li className="text-center text-xs text-muted-foreground py-6">No staff data.</li>
+              )}
             </ul>
           </Panel>
 
           <Panel title="Recent Operational Activity"
             action={<Link to="/activity" className="text-xs text-primary inline-flex items-center gap-1">Full log <ArrowRight className="h-3 w-3" /></Link>}>
             <ul className="space-y-3">
-              {recentActivity.map((a, i) => (
+              {activity.data.map((a: any, i: number) => (
                 <li key={i} className="flex items-start gap-3 text-sm">
                   <div className="text-[11px] text-muted-foreground w-12 shrink-0 pt-0.5">{a.time}</div>
                   <div className="h-2 w-2 rounded-full bg-primary mt-1.5 shrink-0" />
@@ -100,6 +147,9 @@ function Hotel() {
                   </div>
                 </li>
               ))}
+              {activity.data.length === 0 && !activity.loading && (
+                <li className="text-center text-xs text-muted-foreground py-6">No recent activity.</li>
+              )}
             </ul>
           </Panel>
         </div>

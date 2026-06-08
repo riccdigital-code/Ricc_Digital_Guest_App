@@ -386,11 +386,14 @@ router.get("/room-access/:roomToken", async (req, res) => {
     // FIND GUEST USER ACCOUNT
     //////////////////////////////////////////////////////////
 
+    const guestEmail =
+      `guest_${session.phone}_prop${session.propertyId}@riccdigital.internal`;
+
     const guestUser = await prisma.user.findFirst({
       where: {
         email: guestEmail,
         role: "GUEST",
-    },
+      },
     });
 
     if (!guestUser) {

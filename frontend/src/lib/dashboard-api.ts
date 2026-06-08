@@ -53,7 +53,17 @@ export const dashboardApi = {
   // SUPER ADMIN
   platformStats: () =>
     withFallback<PlatformStats>(
-      apiClient.get("/api/admin/platform/stats"),
+      apiClient.get("/api/admin/platform/stats").then((res) => ({
+        data: {
+          totalProperties: res.data.stats.totalProperties,
+          activeProperties: res.data.stats.totalProperties, // mapped as total since backend doesn't separate active
+          totalAdmins: res.data.stats.totalAdmins,
+          totalStaff: res.data.stats.totalStaff,
+          activeGuestSessions: res.data.stats.totalGuestSessions,
+          unresolvedTasks: res.data.stats.unresolvedTasks,
+          escalatedTasks: res.data.stats.escalatedTasks,
+        },
+      })),
       {
         totalProperties: mockProperties.length,
         activeProperties: mockProperties.filter((p) => p.status === "operational").length,
@@ -65,7 +75,11 @@ export const dashboardApi = {
       },
     ),
 
-  properties: () => withFallback(apiClient.get("/api/properties"), mockProperties),
+  properties: () =>
+    withFallback(
+      apiClient.get("/api/properties").then((res) => ({ data: res.data.properties })),
+      mockProperties,
+    ),
   requestVolume: () => withFallback(apiClient.get("/api/analytics/request-volume"), mockRequestVolume),
   responseByCategory: () =>
     withFallback(apiClient.get("/api/analytics/response-by-category"), mockResponseByCategory),
@@ -93,6 +107,10 @@ export const dashboardApi = {
     withFallback(apiClient.get("/api/activity/recent", { params: { propertyId } }), mockRecentActivity),
 
   // SHARED
-  escalations: () => withFallback(apiClient.get("/api/escalations"), mockEscalations),
+  escalations: () =>
+    withFallback(
+      apiClient.get("/api/escalations").then((res) => ({ data: res.data.escalations })),
+      mockEscalations,
+    ),
   platformMetrics: () => withFallback(apiClient.get("/api/admin/platform/metrics"), mockPlatformMetrics),
 };

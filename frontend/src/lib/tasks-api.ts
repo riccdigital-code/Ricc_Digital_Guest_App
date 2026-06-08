@@ -37,11 +37,11 @@ export const TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
 };
 
 export const tasksApi = {
-  list: async (): Promise<Task[]> => (await apiClient.get("/api/tasks")).data,
-  myTasks: async (): Promise<Task[]> => (await apiClient.get("/api/tasks/my-tasks")).data,
-  myStats: async (): Promise<TaskStats> => (await apiClient.get("/api/tasks/my-stats")).data,
+  list: async (): Promise<Task[]> => (await apiClient.get("/api/tasks")).data.tasks,
+  myTasks: async (): Promise<Task[]> => (await apiClient.get("/api/tasks/my-tasks")).data.tasks,
+  myStats: async (): Promise<TaskStats> => (await apiClient.get("/api/tasks/my-stats")).data.stats,
   updateStatus: async (id: string, status: TaskStatus): Promise<Task> =>
-    (await apiClient.patch(`/api/tasks/${id}/status`, { status })).data,
+    (await apiClient.patch(`/api/tasks/${id}/status`, { status })).data.task,
   assign: async (id: string, userId: string): Promise<Task> =>
-    (await apiClient.patch(`/api/tasks/${id}/assign`, { userId })).data,
+    (await apiClient.patch(`/api/tasks/${id}/assign`, { userId })).data.task,
 };
